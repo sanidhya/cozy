@@ -1,4 +1,5 @@
 // Lucene TokenGroup.
+// https://github.com/apache/lucene-solr/blob/master/lucene/highlighter/src/java/org/apache/lucene/search/highlight/TokenGroup.java
 
 TokenGroup:
     type Float = Native "float"
@@ -10,6 +11,7 @@ TokenGroup:
 
     extern floatAdd(val1 : Float, val2 : Float) : Float = "{val1} + {val2}"
     extern floatZero() : Float = "0.0f"
+    extern floatAddOne(val : Float) : Float = "{val} + 1.0f"
 
     state scores : Set<(Int, Float)>
     state numTokens : Int
@@ -19,17 +21,24 @@ TokenGroup:
     state matchStartOffset : Int
     state matchEndOffset : Int
 
+    state offset : OffsetAttribute
+
     assume unique [s.0 | s <- scores];
-    assume unique scores;
+
+    op setOffset(o : OffsetAttribute)
+        offset = o
 
     op addTokenScore(score : Float)
-        assume len scores < 50;
         assume not ((len scores, score) in scores);
         assume not ((len scores) in [s.0 | s <- scores]);
-        scores.add((len scores, score))
+        if numTokens < 50:
+            scores.add((len scores, score))
 
     op addTokenTotal(score : Float)
         tot = floatAdd(tot, score)
+
+    op incrementTokens()
+        numTokens = numTokens + 1
 
     op clearTokens()
         numTokens = 0
@@ -41,8 +50,7 @@ TokenGroup:
     //    startOffset(offset) >= endOffset
 
     query getScore(i : Int)
-        assume i >= 0;
-        assume i < len scores;
+        assume i >= 0 and i < len scores;
         the [s.1 | s <- scores, s.0 == i]
 
     //query getEndOffset()
@@ -53,6 +61,6 @@ TokenGroup:
 
     //query getTotalScore()
     //    sum scores
-    // ^^^ BAD, must implement in subclass; cozy won't do it.
+    // must implement in subclass; cozy won't sum floats.
 
 
