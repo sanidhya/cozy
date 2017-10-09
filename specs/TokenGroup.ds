@@ -1,0 +1,58 @@
+// Lucene TokenGroup.
+
+TokenGroup:
+    type Float = Native "float"
+    type OffsetAttribute = Native "OffsetAttribute"
+    type CharTermAttribute = Native "CharTermAttribute"
+
+    extern startOffset(att : OffsetAttribute) : Int = "{att}.startOffset()"
+    extern endOffset(att : OffsetAttribute) : Int = "{att}.endOffset()"
+
+    extern floatAdd(val1 : Float, val2 : Float) : Float = "{val1} + {val2}"
+    extern floatZero() : Float = "0.0f"
+
+    state scores : Set<(Int, Float)>
+    state numTokens : Int
+    state startOffset : Int
+    state endOffset : Int
+    state tot : Float
+    state matchStartOffset : Int
+    state matchEndOffset : Int
+
+    assume unique [s.0 | s <- scores];
+    assume unique scores;
+
+    op addTokenScore(score : Float)
+        assume len scores < 50;
+        assume not ((len scores, score) in scores);
+        assume not ((len scores) in [s.0 | s <- scores]);
+        scores.add((len scores, score))
+
+    op addTokenTotal(score : Float)
+        tot = floatAdd(tot, score)
+
+    op clearTokens()
+        numTokens = 0
+
+    op clearTot()
+        tot = floatZero()
+
+    //query isDistinct()
+    //    startOffset(offset) >= endOffset
+
+    query getScore(i : Int)
+        assume i >= 0;
+        assume i < len scores;
+        the [s.1 | s <- scores, s.0 == i]
+
+    //query getEndOffset()
+    //    endOffset
+
+    query getNumTokens()
+        numTokens
+
+    //query getTotalScore()
+    //    sum scores
+    // ^^^ BAD, must implement in subclass; cozy won't do it.
+
+
