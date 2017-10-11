@@ -3,9 +3,15 @@
 
 TokenGroupNativeBug:
     type OffsetAttribute = Native "OffsetAttribute"
+    type Float = Native "float"
     extern startOffset(att : OffsetAttribute) : Int = "{att}.startOffset()"
+    extern floatIncrement(f : Float) : Float = "{f} + 1.0f"
 
     state offset : OffsetAttribute
+    state total : Float
 
     query getStart()
         startOffset(offset)
+
+    query getTotalPlusOne()
+        floatIncrement(total)
