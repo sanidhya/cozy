@@ -1,0 +1,11 @@
+// Lucene TokenGroup.
+// https://github.com/apache/lucene-solr/blob/master/lucene/highlighter/src/java/org/apache/lucene/search/highlight/TokenGroup.java
+
+TokenGroupNativeBug:
+    type OffsetAttribute = Native "OffsetAttribute"
+    extern startOffset(att : OffsetAttribute) : Int = "{att}.startOffset()"
+
+    state offset : OffsetAttribute
+
+    query getStart()
+        startOffset(offset)

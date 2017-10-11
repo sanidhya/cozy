@@ -24,15 +24,16 @@ TokenGroup:
     state offset : OffsetAttribute
 
     assume unique [s.0 | s <- scores];
+    assume len scores < 50;
 
     op setOffset(o : OffsetAttribute)
         offset = o
 
     op addTokenScore(score : Float)
+        assume numTokens < 50;
         assume not ((len scores, score) in scores);
         assume not ((len scores) in [s.0 | s <- scores]);
-        if numTokens < 50:
-            scores.add((len scores, score))
+        scores.add((len scores, score))
 
     op addTokenTotal(score : Float)
         tot = floatAdd(tot, score)
@@ -46,15 +47,16 @@ TokenGroup:
     op clearTot()
         tot = floatZero()
 
-    //query isDistinct()
-    //    startOffset(offset) >= endOffset
+    query isDistinct()
+        // !!! will not compile: startOffset(offset) >= endOffset
+        false
 
     query getScore(i : Int)
         assume i >= 0 and i < len scores;
         the [s.1 | s <- scores, s.0 == i]
 
-    //query getEndOffset()
-    //    endOffset
+    query getEndOffset()
+        endOffset
 
     query getNumTokens()
         numTokens

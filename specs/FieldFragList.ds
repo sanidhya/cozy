@@ -1,0 +1,29 @@
+{{
+package org.apache.lucene.search.vectorhighlight;
+
+import org.apache.lucene.search.vectorhighlight.FieldPhraseList.WeightedPhraseInfo;
+import org.apache.lucene.search.vectorhighlight.FieldPhraseList.WeightedPhraseInfo.Toffs;
+}}
+
+FieldFragList:
+    type Toffs = Native "org.apache.lucene.search.vectorhighlight.FieldPhraseList.WeightedPhraseInfo.Toffs"
+    type Float = Native "float"
+
+    handletype SubInfo = {
+        text : String,
+        termOffsets : Bag<Toffs>,
+        seqnum : Int,
+        boost : Float
+    }
+
+    handletype WeightedFragInfo = {
+        subInfos : Bag<SubInfo>,
+        totalBoost : Float,
+        startOffset : Int,
+        endOffset : Int
+    }
+
+    state fragInfos : Bag<WeightedFragInfo>
+
+    query getFragInfos()
+        fragInfos

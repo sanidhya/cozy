@@ -1,0 +1,16 @@
+TokenGroupIfBug:
+    type Float = Native "float"
+
+    state scores : Set<(Int, Float)>
+    assume unique [s.0 | s <- scores];
+
+    op addTokenScore(score : Float)
+        assume not ((len scores, score) in scores);
+        assume not ((len scores) in [s.0 | s <- scores]);
+        if (len scores) < 50:
+            scores.add((len scores, score))
+
+    query getScore(i : Int)
+        assume i >= 0 and i < len scores;
+        the [s.1 | s <- scores, s.0 == i]
+
