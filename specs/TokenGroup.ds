@@ -6,63 +6,61 @@ TokenGroup:
     type OffsetAttribute = Native "OffsetAttribute"
     type CharTermAttribute = Native "CharTermAttribute"
 
+    type Token = {
+        score : Float,
+        startOffset : Int,
+        endOffset : Int
+    }
+
     extern startOffset(att : OffsetAttribute) : Int = "{att}.startOffset()"
     extern endOffset(att : OffsetAttribute) : Int = "{att}.endOffset()"
 
     extern floatAdd(val1 : Float, val2 : Float) : Float = "{val1} + {val2}"
     extern floatZero() : Float = "0.0f"
     extern floatAddOne(val : Float) : Float = "{val} + 1.0f"
+    extern floatGtZero(val : Float) : Bool = "{val} > 0.0f"
 
-    state scores : Set<(Int, Float)>
-    state numTokens : Int
-    state startOffset : Int
-    state endOffset : Int
+    state tokens : Set<(Int, Token)>
     state tot : Float
     state matchStartOffset : Int
     state matchEndOffset : Int
 
     state offset : OffsetAttribute
 
-    assume unique [s.0 | s <- scores];
-    assume len scores < 50;
+    assume unique [s.0 | s <- tokens];
+    assume unique [s | s <- tokens];
+    assume len tokens < 50;
 
     op setOffset(o : OffsetAttribute)
         offset = o
 
     op addTokenScore(score : Float)
-        assume numTokens < 50;
-        assume not ((len scores, score) in scores);
-        assume not ((len scores) in [s.0 | s <- scores]);
-        scores.add((len scores, score))
+        assume not ((len tokens) in [s.0 | s <- tokens]);
+        tokens.add((len tokens, { score: score, startOffset: 0, endOffset: 0 }))
 
     op addTokenTotal(score : Float)
         tot = floatAdd(tot, score)
-
-    op incrementTokens()
-        numTokens = numTokens + 1
-
-    op clearTokens()
-        numTokens = 0
 
     op clearTot()
         tot = floatZero()
 
     query isDistinct()
-        // !!! will not compile: startOffset(offset) >= endOffset
         false
+        //:startOffset(offset) >= endOffset
 
     query getScore(i : Int)
-        assume i >= 0 and i < len scores;
-        the [s.1 | s <- scores, s.0 == i]
+        assume i >= 0 and i < len tokens;
+        (the [s.1 | s <- tokens, s.0 == i]).score
+
+    query getStartOffset()
+        min [tok.1.startOffset | tok <- tokens, floatGtZero(tok.1.score)]
 
     query getEndOffset()
-        endOffset
+        max [tok.1.endOffset | tok <- tokens, floatGtZero(tok.1.score)]
 
     query getNumTokens()
-        numTokens
+        len tokens
 
     //query getTotalScore()
-    //    sum scores
+    //    sum tokens
     // must implement in subclass; cozy won't sum floats.
-
-
