@@ -161,8 +161,6 @@ class JavaPrinter(CxxPrinter):
         return ("".join(setups), "new {}({})".format(name, ", ".join(args)))
 
     def visit_ENull(self, e, indent=""):
-        if not self.boxed and isinstance(e.type, TMaybe) and self.is_primitive(e.type.t):
-            return self.visit(evaluation.construct_value(e.type.t), indent=indent)
         return ("", "null")
 
     def visit_EStr(self, e, indent=""):
@@ -178,10 +176,17 @@ class JavaPrinter(CxxPrinter):
         return ("", "{}.{}".format(self.typename(e.type), e.name))
 
     def visit_ENative(self, e, indent=""):
-        if isinstance(e.type, library.TNative) and e.type.name in JAVA_PRIMITIVE_TYPES:
-            return ("", "0")
-        else:
-            return ("", "null")
+        assert e.e == ENum(0), "cannot generate code for non-trivial native value"
+        return ("", {
+            "boolean": "false",
+            "byte":    "(byte)0",
+            "char":    "'\\0'",
+            "short":   "(short)0",
+            "int":     "0",
+            "long":    "0L",
+            "float":   "0.0f",
+            "double":  "0.0",
+            }.get(e.type.name.strip(), "null"))
 
     def _eq(self, e1, e2, indent):
         if not self.boxed and self.is_primitive(e1.type):
@@ -197,13 +202,24 @@ class JavaPrinter(CxxPrinter):
         return self.visit(EEscape("{set}.contains({elem})", ["set", "elem"], [set, elem]).with_type(BOOL), indent)
 
     def compute_hash_1(self, e : str, t : Type, out : EVar, indent : str) -> str:
-        if not self.boxed and self.is_primitive(t):
+        if self.is_primitive(t):
             if t == INT:
                 res = e
             elif t == LONG:
                 res = "((int)({e})) ^ ((int)(({e}) >> 32))".format(e=e)
             elif t == BOOL:
                 res = "({e}) ? 1 : 0".format(e=e)
+            elif isinstance(t, TNative):
+                res =  {
+                    "boolean": "{e} ? 1 : 0",
+                    "byte":    "{e}",
+                    "char":    "{e}",
+                    "short":   "{e}",
+                    "int":     "{e}",
+                    "long":    "((int)({e})) ^ ((int)(({e}) >> 32))",
+                    "float":   "Float.floatToIntBits({e})",
+                    "double":  "((int)(Double.doubleToRawLongBits({e}))) ^ ((int)((Double.doubleToRawLongBits({e})) >> 32))",
+                    }[t.name.strip()].format(e=e)
             else:
                 raise NotImplementedError(t)
         else:
@@ -335,7 +351,9 @@ class JavaPrinter(CxxPrinter):
         return "{} {}".format("Long" if self.boxed else "int", name)
 
     def is_primitive(self, t):
-        return t in (INT, LONG, BOOL) or (isinstance(t, TMaybe) and self.is_primitive(t.t))
+        return (
+            t in (INT, LONG, BOOL) or
+            (isinstance(t, TNative) and t.name.strip() in JAVA_PRIMITIVE_TYPES))
 
     def trovename(self, t):
         t = common.capitalize(self.visit(t, name="").strip()) if self.is_primitive(t) else "Object"
@@ -397,9 +415,6 @@ class JavaPrinter(CxxPrinter):
                 raise NotImplementedError(call.func)
         return super().visit_SCall(call, indent)
 
-    def visit_EJust(self, e, indent):
-        return self.visit(e.e, indent)
-
     def visit_EGetField(self, e, indent):
         setup, ee = self.visit(e.e, indent)
         if isinstance(e.e.type, THandle):
@@ -449,9 +464,6 @@ class JavaPrinter(CxxPrinter):
                 self.visit(t.k, ""),
                 self.visit(t.v, ""),
                 name)
-
-    def visit_TMaybe(self, t, name):
-        return self.visit(t.t, name)
 
     def visit_TRef(self, t, name):
         return self.visit(t.t, name)

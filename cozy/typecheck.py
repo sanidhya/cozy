@@ -30,6 +30,9 @@ def retypecheck(exp, env=None):
 def is_numeric(t):
     return t in [INT, LONG]
 
+def is_collection(t):
+    return isinstance(t, syntax.TBag) or isinstance(t, syntax.TSet)
+
 BOOL = syntax.BOOL
 INT = syntax.INT
 LONG = syntax.LONG
@@ -111,8 +114,6 @@ class Typechecker(Visitor):
             return syntax.TSet(self.visit(t.args))
         elif t.t == "Bag":
             return syntax.TBag(self.visit(t.args))
-        elif t.t == "Maybe":
-            return syntax.TMaybe(self.visit(t.args))
         else:
             self.report_err(t, "unknown type {}".format(t.t))
             return t
@@ -140,9 +141,6 @@ class Typechecker(Visitor):
 
     def visit_TNative(self, t):
         return t
-
-    def visit_TMaybe(self, t):
-        return type(t)(self.visit(t.t))
 
     def visit_TBag(self, t):
         return type(t)(self.visit(t.t))
@@ -181,6 +179,16 @@ class Typechecker(Visitor):
             return
         if not is_numeric(e.type):
             self.report_err(e, "expression has non-numeric type {}".format(e.type))
+
+    def lub(self, src, t1, t2, explanation):
+        if t1 == t2:
+            return t1
+        if is_numeric(t1) and is_numeric(t2):
+            return self.numeric_lub(t1, t2)
+        if is_collection(t1) and is_collection(t2):
+            return syntax.TBag(t1.t)
+        self.report_err(src, "cannot unify types {} and {} ({})".format(pprint(t1), pprint(t2), explanation))
+        return DEFAULT_TYPE
 
     def numeric_lub(self, t1, t2):
         if t1 == LONG or t2 == LONG:
@@ -231,8 +239,7 @@ class Typechecker(Visitor):
             t = self.get_collection_type(e.e)
             e.type = e.e.type
         elif e.op == syntax.UOp.The:
-            t = self.get_collection_type(e.e)
-            e.type = syntax.TMaybe(t)
+            e.type = self.get_collection_type(e.e)
         elif e.op in [syntax.UOp.Any, syntax.UOp.All]:
             self.ensure_type(e.e, syntax.TBag(BOOL))
             e.type = BOOL
@@ -278,22 +285,13 @@ class Typechecker(Visitor):
             self.report_err(e, "not sure what type this NULL should have")
             e.type = DEFAULT_TYPE
 
-    def visit_EJust(self, e):
-        self.visit(e.e)
-        e.type = syntax.TMaybe(e.e.type)
-
-    def visit_EAlterMaybe(self, e):
-        self.visit(e.e)
-        self.visit(e.f)
-        e.type = syntax.TMaybe(e.f.body.type)
-
     def visit_ECond(self, e):
         self.visit(e.cond)
         self.visit(e.then_branch)
         self.visit(e.else_branch)
         self.ensure_type(e.cond, BOOL)
-        self.ensure_type(e.else_branch, e.then_branch.type)
-        e.type = e.then_branch.type
+        e.type = self.lub(e, e.else_branch.type, e.then_branch.type,
+            "cases in ternary expression must have the same type")
 
     def visit_ELambda(self, e):
         with self.scope():
