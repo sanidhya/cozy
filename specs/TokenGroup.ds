@@ -44,10 +44,6 @@ TokenGroup:
     op clearTot()
         tot = floatZero()
 
-    query isDistinct()
-        false
-        //:startOffset(offset) >= endOffset
-
     query getScore(i : Int)
         assume i >= 0 and i < len tokens;
         (the [s.1 | s <- tokens, s.0 == i]).score
