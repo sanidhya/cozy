@@ -20,19 +20,9 @@ TokenGroupBase:
         endOffset : Int
     }
 
-    extern startOffset(att : OffsetAttribute) : Int = "{att}.startOffset()"
-    extern endOffset(att : OffsetAttribute) : Int = "{att}.endOffset()"
-
-    extern floatAdd(val1 : Float, val2 : Float) : Float = "{val1} + {val2}"
-    extern floatZero() : Float = "0.0f"
-    extern floatAddOne(val : Float) : Float = "{val} + 1.0f"
     extern floatGtZero(val : Float) : Bool = "{val} > 0.0f"
 
     state tokens : Set<(Int, Token)>
-    state tot : Float
-    state matchStartOffset : Int
-    state matchEndOffset : Int
-
     state offset : OffsetAttribute
 
     assume unique [s.0 | s <- tokens];
@@ -45,12 +35,6 @@ TokenGroupBase:
     op addTokenScore(score : Float)
         assume not ((len tokens) in [s.0 | s <- tokens]);
         tokens.add((len tokens, { score: score, startOffset: 0, endOffset: 0 }))
-
-    op addTokenTotal(score : Float)
-        tot = floatAdd(tot, score)
-
-    op clearTot()
-        tot = floatZero()
 
     query getScore(i : Int)
         assume i >= 0 and i < len tokens;
@@ -67,7 +51,3 @@ TokenGroupBase:
 
     query getTokenFloats()
         [s.1.score | s <- tokens]
-
-    //query getTotalScore()
-    //    sum tokens
-    // must implement in subclass; cozy won't sum floats.
