@@ -1,7 +1,15 @@
 // Lucene TokenGroup.
 // https://github.com/apache/lucene-solr/blob/master/lucene/highlighter/src/java/org/apache/lucene/search/highlight/TokenGroup.java
 
-TokenGroup:
+{{
+package org.apache.lucene.search.highlight;
+
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+}}
+
+TokenGroupBase:
     type Float = Native "float"
     type OffsetAttribute = Native "OffsetAttribute"
     type CharTermAttribute = Native "CharTermAttribute"
@@ -56,6 +64,12 @@ TokenGroup:
 
     query getNumTokens()
         len tokens
+
+    query getTokens()
+        tokens
+
+    query getTokenFloats()
+        [s.1.score | s <- tokens]
 
     //query getTotalScore()
     //    sum tokens
