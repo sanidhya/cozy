@@ -10,7 +10,7 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 }}
 
 TokenGroupBase:
-    type Float = Native "float"
+    type Float = Native "Float"
     type OffsetAttribute = Native "OffsetAttribute"
     type CharTermAttribute = Native "CharTermAttribute"
 
@@ -64,9 +64,6 @@ TokenGroupBase:
 
     query getNumTokens()
         len tokens
-
-    query getTokens()
-        tokens
 
     query getTokenFloats()
         [s.1.score | s <- tokens]
