@@ -3,13 +3,13 @@ Basic:
 
     state l : Bag<Int>
 
-    assume true;
+    invariant true;
 
     op add(n : Int)
-        l.add(n)
+        l.add(n);
 
     op remove(n : Int)
-        l.remove(n)
+        l.remove(n);
 
     query elems()
         l

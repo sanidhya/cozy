@@ -6,14 +6,14 @@ Graph:
     state edges : Bag<Edge>
 
     // Invariant: disallow self-edges.
-    assume (sum [ 1 | e <- edges, e.val.src == e.val.dst ]) == 0;
+    invariant (sum [ 1 | e <- edges, e.val.src == e.val.dst ]) == 0;
 
     op addNode(n : Node)
-        nodes.add(n)
+        nodes.add(n);
 
     op addEdge(e : Edge)
         assume e.val.src != e.val.dst;
-        edges.add(e)
+        edges.add(e);
 
 //    query outgoing(nodeId : Int)
 //        [ e | e <- edges, e.val.src == nodeId ]

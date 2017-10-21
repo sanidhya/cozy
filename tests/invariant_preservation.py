@@ -8,7 +8,7 @@ from cozy.invariant_preservation import check_ops_preserve_invariants
 def get_invariant_preservation_errs(spec : str):
     spec = parse(spec)
     errs = typecheck(spec)
-    assert not errs
+    assert not errs, str(errs)
     spec = desugar(spec)
     return check_ops_preserve_invariants(spec)
     assert errs
@@ -26,19 +26,19 @@ class TestRepInference(unittest.TestCase):
 
                 state xs : Bag<(T, U)>
 
-                assume all [x.0.val > 0 | x <- xs];
-                assume all [x.1.val.score > 0 | x <- xs];
+                invariant all [x.0.val > 0 | x <- xs];
+                invariant all [x.1.val.score > 0 | x <- xs];
 
                 op add(x : T, y : U)
                     assume x.val > 0;
                     assume y.val.score > 0;
-                    xs.add((x, y))
+                    xs.add((x, y));
 
                 op modX(x : T, newVal: Int)
-                    x.val = newVal
+                    x.val = newVal;
 
                 op modY(y : U, newVal: Int)
-                    y.val.score = newVal
+                    y.val.score = newVal;
 
                 query q()
                     xs

@@ -29,6 +29,7 @@ _KEYWORDS = ([
     "query",
     "state",
     "assume",
+    "invariant",
     "true",
     "false",
     "min", "argmin",
@@ -153,7 +154,7 @@ def make_parser():
     start = "spec"
 
     def p_spec(p):
-        """spec : externcode WORD OP_COLON typedecls funcdecls states assumes methods externcode"""
+        """spec : externcode WORD OP_COLON typedecls funcdecls states invariants methods externcode"""
         p[0] = syntax.Spec(p[2], p[4], p[5], p[6], p[7], p[8], p[1], p[9])
 
     def p_externcode(p):
@@ -218,10 +219,14 @@ def make_parser():
         """assume : KW_ASSUME exp OP_SEMICOLON"""
         p[0] = p[2]
 
+    def p_invariant(p):
+        """invariant : KW_INVARIANT exp OP_SEMICOLON"""
+        p[0] = p[2]
+
     parsetools.multi(locals(), "assumes", "assume")
+    parsetools.multi(locals(), "invariants", "invariant")
 
     precedence = (
-        ("nonassoc", "IF_PLAIN"),
         ("nonassoc", "KW_ELSE"),
         ("left", "OP_COMMA"),
         ("left", "OP_QUESTION"),
@@ -376,15 +381,18 @@ def make_parser():
     parsetools.multi(locals(), "methods", "method")
 
     def p_stm(p):
-        """stm : accesschain OP_OPEN_PAREN exp_list OP_CLOSE_PAREN
-               | accesschain OP_ASSIGN exp
-               | KW_IF exp OP_COLON stm %prec IF_PLAIN
-               | KW_IF exp OP_COLON stm KW_ELSE OP_COLON stm"""
+        """stm : accesschain OP_OPEN_PAREN exp_list OP_CLOSE_PAREN OP_SEMICOLON
+               | accesschain OP_ASSIGN exp OP_SEMICOLON
+               | KW_IF exp OP_OPEN_BRACE stm OP_CLOSE_BRACE
+               | KW_IF exp OP_OPEN_BRACE stm OP_CLOSE_BRACE KW_ELSE OP_OPEN_BRACE stm OP_CLOSE_BRACE
+               | stm stm"""
         if p[1] == "if":
-            else_expr = p[7] if len(p) == 8 else syntax.SNoOp()
+            else_expr = p[8] if len(p) > 6 else syntax.SNoOp()
             p[0] = syntax.SIf(p[2], p[4], else_expr)
         elif p[2] == "(":
             p[0] = syntax.SCall(p[1].e, p[1].f, p[3])
+        elif isinstance(p[1], syntax.Stm):
+            p[0] = syntax.SSeq(p[1], p[2])
         else:
             p[0] = syntax.SAssign(p[1], p[3])
 
