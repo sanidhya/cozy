@@ -21,20 +21,23 @@ TokenGroupBase:
     }
 
     extern floatGtZero(val : Float) : Bool = "{val} > 0.0f"
+    extern floatAdd(val1 : Float, val2 : Float) : Float = "{val1} + {val2}"
 
     state tokens : Set<(Int, Token)>
     state offset : OffsetAttribute
+    state total : Float
 
-    assume unique [s.0 | s <- tokens];
-    assume unique [s | s <- tokens];
-    assume len tokens < 50;
+    invariant unique [s.0 | s <- tokens];
+    invariant unique [s | s <- tokens];
+    invariant len tokens < 50;
 
     op setOffset(o : OffsetAttribute)
-        offset = o
+        offset = o;
 
-    op addTokenScore(score : Float)
+    op addToken(score : Float)
         assume not ((len tokens) in [s.0 | s <- tokens]);
-        tokens.add((len tokens, { score: score, startOffset: 0, endOffset: 0 }))
+        total = floatAdd(total, score);
+        tokens.add((len tokens, { score: score, startOffset: 0, endOffset: 0 }));
 
     query getScore(i : Int)
         assume i >= 0 and i < len tokens;
@@ -49,5 +52,5 @@ TokenGroupBase:
     query getNumTokens()
         len tokens
 
-    query getTokenFloats()
-        [s.1.score | s <- tokens]
+    query getTotalScore()
+        total
