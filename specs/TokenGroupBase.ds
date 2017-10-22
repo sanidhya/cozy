@@ -12,7 +12,6 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 TokenGroupBase:
     type Float = Native "Float"
     type OffsetAttribute = Native "OffsetAttribute"
-    type CharTermAttribute = Native "CharTermAttribute"
 
     type Token = {
         score : Float,
@@ -20,19 +19,27 @@ TokenGroupBase:
         endOffset : Int
     }
 
+    // this would be nice:
+    //{{
+    //public TokenGroupBase(TokenStream s) {
+    //    this.setOffsetAtt(s.addAttribute(OffsetAttribute.class));
+    //}
+    //}}
+
     extern floatGtZero(val : Float) : Bool = "{val} > 0.0f"
     extern floatAdd(val1 : Float, val2 : Float) : Float = "{val1} + {val2}"
+    extern startOffset(o : OffsetAttribute) : Int = "{o}.startOffset()"
 
     state tokens : Set<(Int, Token)>
-    state offset : OffsetAttribute
+    state offsetAtt : OffsetAttribute
     state total : Float
 
     invariant unique [s.0 | s <- tokens];
     invariant unique [s | s <- tokens];
     invariant len tokens < 50;
 
-    op setOffset(o : OffsetAttribute)
-        offset = o;
+    op setOffsetAtt(o : OffsetAttribute)
+        offsetAtt = o;
 
     op addToken(score : Float)
         assume not ((len tokens) in [s.0 | s <- tokens]);
@@ -48,6 +55,9 @@ TokenGroupBase:
 
     query getEndOffset()
         max [tok.1.endOffset | tok <- tokens, floatGtZero(tok.1.score)]
+
+    query isDistinct()
+        startOffset(offsetAtt) >= getEndOffset()
 
     query getNumTokens()
         len tokens
