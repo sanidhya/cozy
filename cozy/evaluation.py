@@ -59,6 +59,8 @@ class Bag(object):
     def __add__(self, other):
         return Bag(self.elems + other.elems)
     def __eq__(self, other):
+        if not isinstance(other, Bag):
+            return False
         return sorted(self.elems) == sorted(other.elems)
     def __lt__(self, other):
         return sorted(self.elems) < sorted(other.elems)
@@ -634,7 +636,7 @@ def _compile(e, env : {str:int}, out, bind_callback):
         with extend(env, e.f.arg.id, lambda: box[0]):
             _compile(e.f.body, env, body, bind_callback=bind_callback)
 
-        keytype = e.f.arg.type
+        keytype = e.f.body.type
 
         def initialize(stk):
             bag = stk.pop()
@@ -658,7 +660,7 @@ def _compile(e, env : {str:int}, out, bind_callback):
         out.append(initialize)
         out.append(loop)
     elif isinstance(e, EMakeMap2):
-        _compile(EMap(e.e, ELambda(e.value.arg, ETuple((e.value.arg, e.value.body)))), env, out, bind_callback=bind_callback)
+        _compile(EMap(e.e, ELambda(e.value.arg, ETuple((e.value.arg, e.value.body)))).with_type(TBag(TTuple((e.value.arg.type, e.value.body.type)))), env, out, bind_callback=bind_callback)
         default = mkval(e.type.v)
         def make_map(stk):
             res = Map(e.type, default)

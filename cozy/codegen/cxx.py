@@ -59,8 +59,10 @@ class CxxPrinter(common.Visitor):
     def visit_TNativeSet(self, t, name):
         return "std::unordered_set< {} > {}".format(self.visit(t.t, ""), name)
 
-    def visit_TBag(self, t, name):
-        return self.visit(t.rep_type(), name)
+    def visit_Type(self, t, name):
+        if hasattr(t, "rep_type"):
+            return self.visit(t.rep_type(), name)
+        raise NotImplementedError(t)
 
     def visit_TRecord(self, t, name):
         return "{} {}".format(self.typename(t), name)
@@ -136,7 +138,7 @@ class CxxPrinter(common.Visitor):
         return s
 
     def visit_ENull(self, e, indent=""):
-        return ("", "NULL")
+        return ("", "nullptr")
 
     def visit_EBool(self, e, indent=""):
         return ("", "true" if e.val else "false")
@@ -456,6 +458,9 @@ class CxxPrinter(common.Visitor):
             return self.for_each(iterable.e, lambda x: SIf(iterable.p.apply_to(x), body(x), SNoOp()), indent=indent)
         elif isinstance(iterable, EBinOp) and iterable.op == "+":
             return self.for_each(iterable.e1, body, indent=indent) + self.for_each(iterable.e2, body, indent=indent)
+        elif isinstance(iterable, EBinOp) and iterable.op == "-":
+            setup, e = self.visit(EBinOp(iterable.e1, "-", iterable.e2).with_type(library.TNativeList(iterable.type.t)), indent)
+            return setup + self.for_each(EEscape(e, (), ()).with_type(iterable.type), body, indent)
         elif isinstance(iterable, EFlatMap):
             # TODO: properly handle breaks inside body
             # TODO: indents get messed up here
@@ -507,7 +512,7 @@ class CxxPrinter(common.Visitor):
             SIf(EBinOp(
                     first,
                     BOp.Or,
-                    EBinOp(f.apply_to(x), op, f.apply_to(out))),
+                    EBinOp(f.apply_to(x), op, f.apply_to(out)).with_type(BOOL)).with_type(BOOL),
                 seq([SAssign(first, F), SAssign(out, x)]),
                 SNoOp()))
         return (self.visit(seq([decl1, decl2, find]), indent), out.id)
