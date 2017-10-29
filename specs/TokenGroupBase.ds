@@ -19,13 +19,6 @@ TokenGroupBase:
         endOffset : Int
     }
 
-    // this would be nice:
-    //{{
-    //public TokenGroupBase(TokenStream s) {
-    //    this.setOffsetAtt(s.addAttribute(OffsetAttribute.class));
-    //}
-    //}}
-
     extern floatGtZero(val : Float) : Bool = "{val} > 0.0f"
     extern floatAdd(val1 : Float, val2 : Float) : Float = "{val1} + {val2}"
     extern startOffset(o : OffsetAttribute) : Int = "{o}.startOffset()"
